@@ -12,7 +12,7 @@ An MCP (Model Context Protocol) server that sends notifications to Telegram when
    https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
    ```
 3. **Cloudflare Account**: Sign up at [cloudflare.com](https://cloudflare.com)
-4. **Wrangler CLI**: Install with `npm install -g wrangler`
+4. **Wrangler CLI**: Install with `pnpm install -g wrangler`
 
 ### Installation
 
@@ -62,64 +62,59 @@ cp mcp.example.json mcp.json
 
 ## Usage
 
-Once configured, this MCP server integrates with Claude Code to send Telegram notifications. Here's how it works:
+Once configured, Claude Code can send notifications to your Telegram whenever you need them.
 
-### How Claude Code Uses This Server
+### How It Works
 
-1. **MCP Integration**: Claude Code connects to your deployed Cloudflare Worker via the MCP protocol
-2. **Available Tool**: A new `notify_telegram` tool becomes available to Claude Code
-3. **Notification Trigger**: Claude Code can call this tool at any time during task execution
+1. This MCP server gives Claude Code a `notify_telegram` tool
+2. Claude Code uses this tool to send messages to your Telegram
+3. You'll receive notifications with a 🤖 prefix in your configured chat
 
-### Types of Notifications
+### When You'll Get Notifications
 
-#### 1. Manual Notifications (Explicit)
-Claude Code can explicitly send notifications by calling the `notify_telegram` tool:
+Claude Code sends notifications when:
+- You explicitly ask: "notify me when done" or "let me know on Telegram"
+- Errors occur during execution
+- Important milestones are reached
+- User input or intervention is needed
 
-**Example scenarios:**
-- When a long-running task completes
-- When an important milestone is reached
-- When user intervention might be needed
+### Example Scenarios
 
-**How Claude Code calls it:**
+```bash
+# You say: "Deploy to production and notify me when done"
+# Result: 🤖 Claude Code Notification
+#         Deployment completed successfully! The app is now live.
+
+# You say: "Run all tests and let me know the results"
+# Result: 🤖 Claude Code Notification
+#         All tests passed! 52/52 tests successful.
+
+# You say: "Process this data and notify me if there are any errors"
+# Result: 🤖 Claude Code Notification
+#         Error: Failed to process row 451 - invalid date format
 ```
-// Claude Code will automatically use this tool when appropriate
-// Example: After completing a deployment
-notify_telegram({ "message": "Deployment completed successfully! The app is now live." })
 
-// Example: After running tests
-notify_telegram({ "message": "All tests passed! 52/52 tests successful." })
+### CLAUDE.md Examples
+
+To encourage Claude Code to use Telegram notifications effectively, add these to your CLAUDE.md:
+
+```markdown
+# Telegram Notifications
+
+- Always send a Telegram notification when:
+  - A task is fully complete
+  - You need user input to continue
+  - An error occurs that requires user attention
+
+- Include relevant details in notifications:
+  - For builds/tests: success/failure status and counts
+  - For errors: the specific error message and file location
+
+- Use concise, informative messages like:
+  - "✅ Build completed successfully (2m 34s)"
+  - "❌ Tests failed: 3/52 failing in auth.test.ts"
+  - "⚠️ Need permission to modify /etc/hosts"
 ```
-
-#### 2. Automatic Notifications (Future Feature)
-*Note: Automatic notifications for events like "user input required" are planned but not yet implemented in this version.*
-
-### Notification Format
-
-All notifications appear in your Telegram chat with:
-- 🤖 **Claude Code Notification** prefix
-- The custom message content
-- Timestamp of when the notification was sent
-
-### Example Workflow
-
-1. **You ask Claude Code**: "Deploy my app and let me know when it's done"
-2. **Claude Code performs the deployment**: Runs build, tests, and deploy commands
-3. **Claude Code sends notification**: Calls `notify_telegram` with a completion message
-4. **You receive on Telegram**: "🤖 Claude Code Notification: Deployment completed successfully!"
-
-### Common Use Cases
-
-- **Long-running builds**: Get notified when compilation or bundling completes
-- **Test suites**: Know immediately when tests finish and whether they passed
-- **Deployments**: Receive confirmation when your app is live
-- **Data processing**: Get alerts when batch jobs or migrations complete
-- **Error handling**: Be notified if something goes wrong during execution
-
-### Tips for Best Results
-
-- Ask Claude Code explicitly to "notify me when done" or "send a Telegram message when complete"
-- Claude Code will intelligently decide when notifications are appropriate
-- Notifications work best for tasks that take more than a few seconds
 
 ## Development
 

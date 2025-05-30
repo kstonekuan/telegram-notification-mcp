@@ -110,13 +110,13 @@ pub async fn handle_mcp_request(
                     let tools = vec![
                         Tool {
                             name: "notify_telegram".to_string(),
-                            description: "Send a notification to Telegram when a task is completed".to_string(),
+                            description: "Send a notification to Telegram. Use this when: task completes, error occurs, user input needed, or any important status update. This server also accepts automatic notifications via $/userInputRequired, $/progress, $/error, and $/taskComplete.".to_string(),
                             input_schema: serde_json::json!({
                                 "type": "object",
                                 "properties": {
                                     "message": {
                                         "type": "string",
-                                        "description": "The notification message to send"
+                                        "description": "The notification message to send. Include relevant context like: what task completed, what error occurred, what input is needed, etc."
                                     }
                                 },
                                 "required": ["message"]
