@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "telegram-notification": {
+      "url": "https://your-worker-name.workers.dev/mcp",
+      "transport": {
+        "type": "http"
+      }
+    }
+  }
+}

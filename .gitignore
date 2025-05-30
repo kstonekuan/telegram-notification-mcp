@@ -1,0 +1,7 @@
+/target
+/build
+.wrangler
+node_modules
+.env
+.cargo-ok
+mcp.json

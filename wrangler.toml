@@ -1,0 +1,11 @@
+name = "telegram-notification-mcp"
+main = "build/worker/shim.mjs"
+compatibility_date = "2024-01-01"
+
+[build]
+command = "cargo install -q worker-build && worker-build --release"
+
+[vars]
+# These will be overridden by secrets in production
+TELEGRAM_BOT_TOKEN = ""
+TELEGRAM_CHAT_ID = ""
