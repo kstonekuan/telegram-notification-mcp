@@ -1,22 +1,25 @@
 # Telegram Notification MCP Server
 
-An MCP (Model Context Protocol) server that sends notifications to Telegram when Claude Code completes tasks. Built with Rust and deployable on Cloudflare Workers.
+An MCP (Model Context Protocol) server that sends notifications to Telegram when Claude Code completes tasks. Built with TypeScript using the Cloudflare Agents SDK and deployable on Cloudflare Workers.
 
 ## Features
 
-- 🤖 **MCP Tools**: Provides a `notify_telegram` tool that Claude Code can use
-- 📢 **Automatic Notifications**: Handles MCP notification events (errors, progress, task completion)
+- 🤖 **MCP Tool**: Provides a `send_telegram_message` tool for sending notifications
 - 🚀 **Cloudflare Workers**: Runs serverless with global distribution
 - 🔐 **Secure**: Uses Cloudflare secrets for credentials
-- 🌐 **SSE Transport**: Supports Server-Sent Events for real-time communication
+- 🌐 **Dual Transport**: Supports both SSE and Streamable HTTP for maximum compatibility
+- 💾 **Durable Objects**: State management with automatic hibernation
+- 📝 **Formatting**: Supports Markdown and HTML message formatting
 
 ## Architecture
 
-This server implements the MCP specification (version 2024-11-05) with SSE transport:
-- **GET /mcp**: SSE endpoint that returns the connection endpoint
-- **POST /mcp**: Handles MCP JSON-RPC requests and returns SSE-formatted responses
-- Full lifecycle support with `initialize` and `initialized` handling
-- Proper JSON-RPC 2.0 error codes
+This server implements the MCP specification using Cloudflare's Agents SDK:
+- **GET /sse**: SSE endpoint for MCP communication
+- **POST /mcp**: Streamable HTTP endpoint for MCP communication
+- Built with TypeScript, MCP SDK, and Cloudflare Agents SDK
+- Proper JSON-RPC 2.0 error handling
+- Durable Objects for stateful connections
+- Node.js compatibility mode enabled
 
 ## Setup
 
@@ -35,24 +38,23 @@ This server implements the MCP specification (version 2024-11-05) with SSE trans
 2. Install dependencies:
    ```bash
    pnpm install
-   cargo build
    ```
 
 ### Configuration
 
-1. For local development, create a `.env` file:
+1. Create a `.dev.vars` file from the example:
    ```bash
-   cp .env.example .env
+   cp .dev.vars.example .dev.vars
    ```
-   Then edit `.env` with your bot token and chat ID.
+   Then edit `.dev.vars` with your bot token and chat ID. This file is used for both local development and deployment.
 
 2. For production deployment, set up Cloudflare secrets:
    ```bash
-   pnpm exec wrangler secret put TELEGRAM_BOT_TOKEN
-   pnpm exec wrangler secret put TELEGRAM_CHAT_ID
+   npx wrangler secret put BOT_TOKEN
+   npx wrangler secret put DEFAULT_CHAT_ID  # Optional
    ```
    
-   **Note**: The TELEGRAM_CHAT_ID determines who receives notifications. Each deployment can only notify one chat/user.
+   **Note**: The DEFAULT_CHAT_ID is optional. If not set, you must provide a chat_id parameter when calling the `send_telegram_message` tool.
 
 3. Update `wrangler.toml` with your worker name if desired
 
@@ -60,20 +62,20 @@ This server implements the MCP specification (version 2024-11-05) with SSE trans
 
 Deploy to Cloudflare Workers:
 
-**Option 1: Using .env file (Recommended)**
+**Option 1: One-line deployment (Recommended)**
 ```bash
-# This will read your .env file and set secrets automatically
+# This will read your .dev.vars file and deploy with secrets
 ./deploy.sh
 ```
 
 **Option 2: Manual deployment**
 ```bash
 # First set secrets manually
-pnpm exec wrangler secret put TELEGRAM_BOT_TOKEN
-pnpm exec wrangler secret put TELEGRAM_CHAT_ID
+npx wrangler secret put BOT_TOKEN
+npx wrangler secret put DEFAULT_CHAT_ID
 
 # Then deploy
-pnpm exec wrangler deploy
+pnpm run deploy
 ```
 
 ### Claude Code Configuration
@@ -81,14 +83,17 @@ pnpm exec wrangler deploy
 Add the MCP server to Claude Code using the CLI:
 
 ```bash
-# For production deployment
-claude mcp add telegram-notify https://your-worker-name.workers.dev/mcp -t sse
+# For production deployment (SSE)
+claude mcp add telegram-notify https://your-worker-name.workers.dev/sse -t sse
+
+# For production deployment (Streamable HTTP - recommended)
+claude mcp add telegram-notify https://your-worker-name.workers.dev/mcp
 
 # For local development
-claude mcp add telegram-notify http://localhost:8787/mcp -t sse
+claude mcp add telegram-notify http://localhost:8787/sse -t sse
 ```
 
-**Note**: This server uses SSE (Server-Sent Events) transport for MCP communication.
+**Note**: This server supports both SSE (Server-Sent Events) and Streamable HTTP transport. While SSE works well, Streamable HTTP provides better reliability and is the newer standard.
 
 You can verify the configuration with:
 ```bash
@@ -101,16 +106,26 @@ Once configured, Claude Code can send notifications to your Telegram whenever yo
 
 ### Available Tool
 
-- **notify_telegram**: Send a custom notification message to Telegram
-  - Parameter: `message` (string) - The notification message to send
+**send_telegram_message**: Send a notification message to Telegram
+- `text` (required): The message text to send
+- `chat_id` (optional): Telegram chat ID (uses DEFAULT_CHAT_ID if not provided)
+- `parse_mode` (optional): "Markdown" or "HTML" for message formatting
+- `disable_notification` (optional): Send message silently
 
-### Automatic Notifications
+Example usage:
+```javascript
+// Uses DEFAULT_CHAT_ID from environment
+await send_telegram_message({ text: "Task completed!" })
 
-The server also handles these MCP notification events automatically:
-- `$/userInputRequired` - ⚠️ When user input is needed
-- `$/progress` - ⏳ Task progress updates
-- `$/error` - ❌ When errors occur
-- `$/taskComplete` - ✅ When tasks complete
+// Send to specific chat (overrides DEFAULT_CHAT_ID)
+await send_telegram_message({ text: "Hello!", chat_id: "123456789" })
+
+// Send with Markdown formatting
+await send_telegram_message({ 
+  text: "*Bold* and _italic_ text", 
+  parse_mode: "Markdown" 
+})
+```
 
 ### When You'll Get Notifications
 
@@ -162,47 +177,37 @@ To encourage Claude Code to use Telegram notifications effectively, add these to
 
 Run locally:
 ```bash
-# Create .env file if you haven't already
-cp .env.example .env
-# Edit .env with your credentials
-
 # Start local development server
-pnpm run dev
+pnpm dev
 ```
 
-Wrangler will automatically load variables from your `.env` file during local development.
+For local development, Wrangler will automatically load environment variables from your `.dev.vars` file.
 
-Run clippy:
+Run linting and type checking:
 ```bash
-cargo clippy
+pnpm lint:fix
+pnpm type-check
 ```
 
 Test the server:
 ```bash
 # Test SSE connection
-curl http://localhost:8787/mcp
+curl http://localhost:8787/sse
 
 # Test health endpoint
-curl http://localhost:8787/health
+curl http://localhost:8787/
 ```
 
 ## Debugging
 
 ### Testing the SSE Connection
 
-1. **Using the test script:**
-   ```bash
-   ./test-sse.sh
-   ```
+You can test the SSE endpoint directly:
+```bash
+curl -N http://localhost:8787/sse
+```
 
-2. **Using the Node.js debug client:**
-   ```bash
-   pnpm add -D eventsource  # Install dependency
-   node debug-client.js http://localhost:8787/mcp
-   ```
-
-3. **Using the browser test client:**
-   Open `test-client.html` in a web browser and connect to your worker URL.
+This should return an event stream starting with an `endpoint` event.
 
 ### Common Issues
 
@@ -210,19 +215,24 @@ curl http://localhost:8787/health
 
 2. **No endpoint event received**: Ensure the SSE headers are being sent correctly and the stream is properly formatted.
 
-3. **Telegram notifications not sent**: Verify your `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are correctly set in the worker environment.
+3. **Telegram notifications not sent**: Verify your `BOT_TOKEN` and `DEFAULT_CHAT_ID` are correctly set in the worker environment.
 
 ## Technical Details
 
-- **Language**: Rust
-- **Runtime**: Cloudflare Workers (WASM)
-- **Protocol**: MCP (Model Context Protocol) v2024-11-05
-- **Transport**: SSE (Server-Sent Events)
-- **Dependencies**: 
-  - `worker` - Cloudflare Workers Rust SDK
-  - `serde` - JSON serialization
-  - `serde_json` - JSON parsing
-  - `futures` - Async streams
+- **Language**: TypeScript (ES2021 target)
+- **Runtime**: Cloudflare Workers with Node.js compatibility
+- **Protocol**: MCP (Model Context Protocol)
+- **Transport**: SSE and Streamable HTTP
+- **State Management**: Durable Objects
+- **Observability**: Enabled for monitoring
+
+## References
+
+This project was built following these guides:
+- [Build a Remote MCP server - Cloudflare Agents](https://developers.cloudflare.com/agents/guides/remote-mcp-server/)
+- [Model Context Protocol (MCP) - Cloudflare Agents](https://developers.cloudflare.com/agents/model-context-protocol/)
+- [MCP Transport Methods - Cloudflare Agents](https://developers.cloudflare.com/agents/model-context-protocol/transport/)
+- [Cloudflare MCP Template (remote-mcp-authless)](https://github.com/cloudflare/ai/tree/main/demos/remote-mcp-authless)
 
 ## License
 

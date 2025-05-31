@@ -3,5 +3,6 @@
 .wrangler
 node_modules
 .env
+.dev.vars
 .cargo-ok
 mcp.json
