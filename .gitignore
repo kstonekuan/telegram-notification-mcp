@@ -6,3 +6,4 @@ node_modules
 .dev.vars
 .cargo-ok
 mcp.json
+wrangler.toml
