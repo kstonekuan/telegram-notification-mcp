@@ -1,0 +1,15 @@
+{
+  "name": "telegram-notification-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MCP Server for Telegram notifications via Cloudflare Workers",
+  "scripts": {
+    "deploy": "./deploy.sh",
+    "dev": "wrangler dev",
+    "publish": "wrangler publish"
+  },
+  "devDependencies": {
+    "eventsource": "^4.0.0",
+    "wrangler": "^4.18.0"
+  }
+}

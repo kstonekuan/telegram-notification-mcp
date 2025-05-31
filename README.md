@@ -2,6 +2,22 @@
 
 An MCP (Model Context Protocol) server that sends notifications to Telegram when Claude Code completes tasks. Built with Rust and deployable on Cloudflare Workers.
 
+## Features
+
+- 🤖 **MCP Tools**: Provides a `notify_telegram` tool that Claude Code can use
+- 📢 **Automatic Notifications**: Handles MCP notification events (errors, progress, task completion)
+- 🚀 **Cloudflare Workers**: Runs serverless with global distribution
+- 🔐 **Secure**: Uses Cloudflare secrets for credentials
+- 🌐 **SSE Transport**: Supports Server-Sent Events for real-time communication
+
+## Architecture
+
+This server implements the MCP specification (version 2024-11-05) with SSE transport:
+- **GET /mcp**: SSE endpoint that returns the connection endpoint
+- **POST /mcp**: Handles MCP JSON-RPC requests and returns SSE-formatted responses
+- Full lifecycle support with `initialize` and `initialized` handling
+- Proper JSON-RPC 2.0 error codes
+
 ## Setup
 
 ### Prerequisites
@@ -12,65 +28,89 @@ An MCP (Model Context Protocol) server that sends notifications to Telegram when
    https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
    ```
 3. **Cloudflare Account**: Sign up at [cloudflare.com](https://cloudflare.com)
-4. **Wrangler CLI**: Install with `pnpm install -g wrangler`
 
 ### Installation
 
 1. Clone this repository
 2. Install dependencies:
    ```bash
+   pnpm install
    cargo build
    ```
 
 ### Configuration
 
-1. Set up Cloudflare secrets:
+1. For local development, create a `.env` file:
    ```bash
-   wrangler secret put TELEGRAM_BOT_TOKEN
-   wrangler secret put TELEGRAM_CHAT_ID
+   cp .env.example .env
+   ```
+   Then edit `.env` with your bot token and chat ID.
+
+2. For production deployment, set up Cloudflare secrets:
+   ```bash
+   pnpm exec wrangler secret put TELEGRAM_BOT_TOKEN
+   pnpm exec wrangler secret put TELEGRAM_CHAT_ID
    ```
    
    **Note**: The TELEGRAM_CHAT_ID determines who receives notifications. Each deployment can only notify one chat/user.
 
-2. Update `wrangler.toml` with your worker name if desired
+3. Update `wrangler.toml` with your worker name if desired
 
 ### Deployment
 
 Deploy to Cloudflare Workers:
+
+**Option 1: Using .env file (Recommended)**
 ```bash
-wrangler deploy
+# This will read your .env file and set secrets automatically
+./deploy.sh
+```
+
+**Option 2: Manual deployment**
+```bash
+# First set secrets manually
+pnpm exec wrangler secret put TELEGRAM_BOT_TOKEN
+pnpm exec wrangler secret put TELEGRAM_CHAT_ID
+
+# Then deploy
+pnpm exec wrangler deploy
 ```
 
 ### Claude Code Configuration
 
-Add to your Claude Code MCP configuration:
+Add the MCP server to Claude Code using the CLI:
 
 ```bash
-cp mcp.example.json mcp.json
+# For production deployment
+claude mcp add telegram-notify https://your-worker-name.workers.dev/mcp -t sse
+
+# For local development
+claude mcp add telegram-notify http://localhost:8787/mcp -t sse
 ```
 
-```json
-{
-  "mcpServers": {
-    "telegram-notification": {
-      "url": "https://your-worker-name.workers.dev/mcp",
-      "transport": {
-        "type": "http"
-      }
-    }
-  }
-}
+**Note**: This server uses SSE (Server-Sent Events) transport for MCP communication.
+
+You can verify the configuration with:
+```bash
+claude mcp list
 ```
 
 ## Usage
 
 Once configured, Claude Code can send notifications to your Telegram whenever you need them.
 
-### How It Works
+### Available Tool
 
-1. This MCP server gives Claude Code a `notify_telegram` tool
-2. Claude Code uses this tool to send messages to your Telegram
-3. You'll receive notifications with a 🤖 prefix in your configured chat
+- **notify_telegram**: Send a custom notification message to Telegram
+  - Parameter: `message` (string) - The notification message to send
+
+### Automatic Notifications
+
+The server also handles these MCP notification events automatically:
+- `$/userInputRequired` - ⚠️ When user input is needed
+- `$/progress` - ⏳ Task progress updates
+- `$/error` - ❌ When errors occur
+- `$/taskComplete` - ✅ When tasks complete
 
 ### When You'll Get Notifications
 
@@ -122,10 +162,68 @@ To encourage Claude Code to use Telegram notifications effectively, add these to
 
 Run locally:
 ```bash
-wrangler dev
+# Create .env file if you haven't already
+cp .env.example .env
+# Edit .env with your credentials
+
+# Start local development server
+pnpm run dev
 ```
+
+Wrangler will automatically load variables from your `.env` file during local development.
 
 Run clippy:
 ```bash
 cargo clippy
 ```
+
+Test the server:
+```bash
+# Test SSE connection
+curl http://localhost:8787/mcp
+
+# Test health endpoint
+curl http://localhost:8787/health
+```
+
+## Debugging
+
+### Testing the SSE Connection
+
+1. **Using the test script:**
+   ```bash
+   ./test-sse.sh
+   ```
+
+2. **Using the Node.js debug client:**
+   ```bash
+   pnpm add -D eventsource  # Install dependency
+   node debug-client.js http://localhost:8787/mcp
+   ```
+
+3. **Using the browser test client:**
+   Open `test-client.html` in a web browser and connect to your worker URL.
+
+### Common Issues
+
+1. **Connection closes immediately**: Check that your worker is running and accessible at the specified URL.
+
+2. **No endpoint event received**: Ensure the SSE headers are being sent correctly and the stream is properly formatted.
+
+3. **Telegram notifications not sent**: Verify your `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are correctly set in the worker environment.
+
+## Technical Details
+
+- **Language**: Rust
+- **Runtime**: Cloudflare Workers (WASM)
+- **Protocol**: MCP (Model Context Protocol) v2024-11-05
+- **Transport**: SSE (Server-Sent Events)
+- **Dependencies**: 
+  - `worker` - Cloudflare Workers Rust SDK
+  - `serde` - JSON serialization
+  - `serde_json` - JSON parsing
+  - `futures` - Async streams
+
+## License
+
+MIT
