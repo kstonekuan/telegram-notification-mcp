@@ -29,6 +29,8 @@ An MCP (Model Context Protocol) server that sends notifications to Telegram when
    wrangler secret put TELEGRAM_BOT_TOKEN
    wrangler secret put TELEGRAM_CHAT_ID
    ```
+   
+   **Note**: The TELEGRAM_CHAT_ID determines who receives notifications. Each deployment can only notify one chat/user.
 
 2. Update `wrangler.toml` with your worker name if desired
 
