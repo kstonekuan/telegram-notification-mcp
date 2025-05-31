@@ -158,10 +158,13 @@ To encourage Claude Code to use Telegram notifications effectively, add these to
 ```markdown
 # Telegram Notifications
 
+Use the mcp__telegram-notify__send_telegram_message tool to send notifications to Telegram.
+
 - Always send a Telegram notification when:
   - A task is fully complete
   - You need user input to continue
   - An error occurs that requires user attention
+  - The user explicitly asks for a notification (e.g., "notify me", "send me a message", "let me know")
 
 - Include relevant details in notifications:
   - For builds/tests: success/failure status and counts
