@@ -13,8 +13,3 @@ name = "MCP_OBJECT"
 
 [observability]
 enabled = true
-
-[vars]
-# These will be overridden by secrets in production
-BOT_TOKEN = ""
-DEFAULT_CHAT_ID = ""
