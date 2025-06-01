@@ -80,14 +80,11 @@ pnpm run deploy
 
 ### Claude Code Configuration
 
-Add the MCP server to Claude Code using the CLI:
+Add the MCP server to Claude Code using the CLI via SSE transport:
 
 ```bash
 # For production deployment (SSE)
 claude mcp add telegram-notify https://your-worker-name.workers.dev/sse -t sse
-
-# For production deployment (Streamable HTTP - recommended)
-claude mcp add telegram-notify https://your-worker-name.workers.dev/mcp
 
 # For local development
 claude mcp add telegram-notify http://localhost:8787/sse -t sse

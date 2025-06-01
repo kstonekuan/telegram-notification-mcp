@@ -1,14 +1,14 @@
 /// <reference path="../worker-configuration.d.ts" />
 
-import { McpAgent } from "agents/mcp";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
 import type { ApiResponse, Message } from "@grammyjs/types";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpAgent } from "agents/mcp";
+import { z } from "zod";
 
 // Helper function to send Telegram messages
 async function sendTelegramMessage(
 	botToken: string,
-	chatId: string | number,
+	chatId: number | string,
 	text: string,
 	parseMode?: "Markdown" | "HTML",
 	disableNotification?: boolean,
@@ -53,12 +53,12 @@ export class TelegramMCP extends McpAgent {
 			"send_telegram_message",
 			{
 				text: z.string(),
-				chat_id: z.union([z.string(), z.number()]).optional(),
+				chat_id: z.number().optional(),
 				parse_mode: z.enum(["Markdown", "HTML"]).optional(),
 				disable_notification: z.boolean().optional(),
 			},
 			async ({ text, chat_id, parse_mode, disable_notification }) => {
-				const env = this.env as unknown as Env;
+				const env = this.env as Env;
 				const botToken = env.BOT_TOKEN;
 				const defaultChatId = env.DEFAULT_CHAT_ID;
 
