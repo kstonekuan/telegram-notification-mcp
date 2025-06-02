@@ -8,7 +8,8 @@ An MCP (Model Context Protocol) server that sends notifications to Telegram when
 - 🚀 **Cloudflare Workers**: Runs serverless with global distribution
 - 🔐 **Secure**: Uses Cloudflare secrets for credentials
 - 🌐 **Dual Transport**: Supports both SSE and Streamable HTTP for maximum compatibility
-- 💾 **Durable Objects**: State management with automatic hibernation
+- 💾 **Durable Objects**: State management required by McpAgent
+- 💬 **Message Formatting**: Supports Markdown and HTML formatting
 - 📝 **Formatting**: Supports Markdown and HTML message formatting
 
 ## Architecture
@@ -18,7 +19,7 @@ This server implements the MCP specification using Cloudflare's Agents SDK:
 - **POST /mcp**: Streamable HTTP endpoint for MCP communication
 - Built with TypeScript, MCP SDK, and Cloudflare Agents SDK
 - Proper JSON-RPC 2.0 error handling
-- Durable Objects for stateful connections
+- Durable Objects for stateful connections (required by McpAgent)
 - Node.js compatibility mode enabled
 
 ## Setup
@@ -62,17 +63,12 @@ This server implements the MCP specification using Cloudflare's Agents SDK:
 
 Deploy to Cloudflare Workers:
 
-**Option 1: One-line deployment (Recommended)**
-```bash
-# This will read your .dev.vars file and deploy with secrets
-./deploy.sh
-```
+Deploy using Wrangler:
 
-**Option 2: Manual deployment**
 ```bash
-# First set secrets manually
+# First set secrets
 npx wrangler secret put BOT_TOKEN
-npx wrangler secret put DEFAULT_CHAT_ID
+npx wrangler secret put DEFAULT_CHAT_ID  # Optional
 
 # Then deploy
 pnpm run deploy
@@ -183,11 +179,16 @@ pnpm dev
 
 For local development, Wrangler will automatically load environment variables from your `.dev.vars` file.
 
-Run linting and type checking:
+Run all checks before deployment:
 ```bash
-pnpm lint:fix
-pnpm type-check
+pnpm build
 ```
+
+This command runs:
+1. `pnpm format` - Format code with Biome
+2. `pnpm lint:fix` - Fix linting issues  
+3. `pnpm cf-typegen` - Generate Cloudflare types
+4. `pnpm type-check` - Check TypeScript types
 
 Test the server:
 ```bash
@@ -223,7 +224,7 @@ This should return an event stream starting with an `endpoint` event.
 - **Runtime**: Cloudflare Workers with Node.js compatibility
 - **Protocol**: MCP (Model Context Protocol)
 - **Transport**: SSE and Streamable HTTP
-- **State Management**: Durable Objects
+- **State Management**: Durable Objects (required by McpAgent)
 - **Observability**: Enabled for monitoring
 
 ## References
