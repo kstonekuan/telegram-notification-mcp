@@ -9,7 +9,8 @@
 		"lint:fix": "biome lint --fix",
 		"start": "wrangler dev",
 		"cf-typegen": "wrangler types",
-		"type-check": "tsc --noEmit"
+		"type-check": "tsc --noEmit",
+		"build": "pnpm format && pnpm lint:fix && pnpm cf-typegen && pnpm type-check"
 	},
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "^1.12.0",
