@@ -78,6 +78,10 @@ npx wrangler secret put DEFAULT_CHAT_ID  # Optional
 pnpm run deploy
 ```
 
+**Alternative: Continuous Deployment**
+
+You can also set up continuous deployment directly from the cloudflare dashboard. Learn more about [git integration with cloudflare](https://developers.cloudflare.com/pages/configuration/git-integration/)
+
 ### Claude Code Configuration
 
 Add the MCP server to Claude Code using the CLI via SSE transport:
