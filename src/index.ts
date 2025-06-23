@@ -7,8 +7,8 @@ import { z } from "zod";
 
 // Extend the Env interface to include the secrets
 interface Env {
-	TELEGRAM_BOT_TOKEN: string;
-	TELEGRAM_CHAT_ID: string;
+	BOT_TOKEN: string;
+	DEFAULT_CHAT_ID: string;
 	MCP_OBJECT: DurableObjectNamespace;
 }
 
