@@ -6,6 +6,8 @@
   An MCP (Model Context Protocol) server that sends notifications to Telegram when Claude Code completes tasks. Built with TypeScript using the Cloudflare Agents SDK and deployable on Cloudflare Workers.
 </div>
 
+> 📢 **Prefer Discord?** Check out [Discord Notification MCP](https://github.com/kstonekuan/discord-notification-mcp) for Discord notifications instead.
+
 ## Features
 
 - 🤖 **MCP Tool**: Provides a `send_telegram_message` tool for sending notifications
@@ -254,10 +256,6 @@ This project was built following these guides:
 - [Model Context Protocol (MCP) - Cloudflare Agents](https://developers.cloudflare.com/agents/model-context-protocol/)
 - [MCP Transport Methods - Cloudflare Agents](https://developers.cloudflare.com/agents/model-context-protocol/transport/)
 - [Cloudflare MCP Template (remote-mcp-authless)](https://github.com/cloudflare/ai/tree/main/demos/remote-mcp-authless)
-
-## Related Projects
-
-- [Discord Notification MCP](https://github.com/kstonekuan/discord-notification-mcp) - Send notifications to Discord instead of Telegram
 
 ## License
 
