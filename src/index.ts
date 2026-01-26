@@ -5,13 +5,6 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { McpAgent } from "agents/mcp";
 import { z } from "zod";
 
-// Extend the Env interface to include the secrets
-interface Env {
-	BOT_TOKEN: string;
-	DEFAULT_CHAT_ID: string;
-	MCP_OBJECT: DurableObjectNamespace;
-}
-
 // Helper function to send Telegram messages
 async function sendTelegramMessage(
 	botToken: string,
@@ -65,7 +58,7 @@ export class TelegramMCP extends McpAgent {
 				disable_notification: z.boolean().optional(),
 			},
 			async ({ text, chat_id, parse_mode, disable_notification }) => {
-				const env = this.env as Env;
+				const env = this.env;
 				const botToken = env.BOT_TOKEN;
 				const defaultChatId = env.DEFAULT_CHAT_ID;
 
