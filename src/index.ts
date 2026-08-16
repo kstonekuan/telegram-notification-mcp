@@ -1,46 +1,12 @@
 /// <reference path="../worker-configuration.d.ts" />
 
-import type { ApiResponse, Message } from "@grammyjs/types";
 import { McpServer } from "@modelcontextprotocol/server";
 import { createMcpHandler } from "agents/mcp/server";
 import { z } from "zod";
+import { sendTelegramMessage } from "./telegram";
 
 const MCP_ENDPOINT_PATH = "/mcp";
 const LEGACY_SSE_ENDPOINT_PATH = "/sse";
-
-async function sendTelegramMessage(
-	botToken: string,
-	chatId: number | string,
-	text: string,
-	parseMode?: "Markdown" | "HTML",
-	disableNotification?: boolean,
-): Promise<Message> {
-	const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-	const body = {
-		chat_id: chatId,
-		text,
-		parse_mode: parseMode,
-		disable_notification: disableNotification,
-	};
-
-	const response = await fetch(url, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify(body),
-	});
-
-	const result = (await response.json()) as ApiResponse<Message>;
-
-	if (!result.ok) {
-		throw new Error(
-			`Telegram API error: ${result.description || "Unknown error"}`,
-		);
-	}
-
-	return result.result;
-}
 
 function createTelegramMcpServer(environment: Env): McpServer {
 	const server = new McpServer({
@@ -83,18 +49,31 @@ function createTelegramMcpServer(environment: Env): McpServer {
 			}
 
 			try {
-				const message = await sendTelegramMessage(
+				const deliveryOutcome = await sendTelegramMessage({
 					botToken,
-					targetChatId,
+					chatId: targetChatId,
 					text,
-					parse_mode,
-					disable_notification,
-				);
+					parseMode: parse_mode,
+					disableNotification: disable_notification,
+				});
+
+				if (deliveryOutcome.status === "rejected") {
+					return {
+						content: [
+							{
+								type: "text",
+								text: `Telegram API rejected the message (${deliveryOutcome.errorCode}): ${deliveryOutcome.description}`,
+							},
+						],
+						isError: true,
+					};
+				}
+
 				return {
 					content: [
 						{
 							type: "text",
-							text: `Message sent successfully to chat ${message.chat.id}`,
+							text: `Message sent successfully to chat ${deliveryOutcome.chatId}`,
 						},
 					],
 				};

@@ -8,8 +8,9 @@
 		"lint": "biome check --write",
 		"start": "wrangler dev",
 		"cf-typegen": "wrangler types --include-env=false",
+		"test": "vitest run",
 		"typecheck": "tsc --noEmit",
-		"check": "pnpm lint && pnpm typecheck",
+		"check": "pnpm lint && pnpm typecheck && pnpm test",
 		"build": "pnpm cf-typegen && pnpm check"
 	},
 	"dependencies": {
@@ -23,6 +24,7 @@
 		"@grammyjs/types": "^3.23.0",
 		"@types/node": "^25.0.10",
 		"typescript": "^5.9.3",
+		"vitest": "^4.1.10",
 		"wrangler": "^4.60.0"
 	}
 }
