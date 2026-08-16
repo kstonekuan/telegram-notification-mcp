@@ -12,20 +12,18 @@
 
 - 🤖 **MCP Tool**: Provides a `send_telegram_message` tool for sending notifications
 - 🚀 **Cloudflare Workers**: Runs serverless with global distribution
-- 🔐 **Secure**: Uses Cloudflare secrets for credentials
-- 🌐 **Dual Transport**: Supports both SSE and Streamable HTTP for maximum compatibility
-- 💾 **Durable Objects**: State management required by McpAgent
+- 🔐 **Authenticated**: Requires a bearer token stored as a Cloudflare secret
+- 🌐 **Streamable HTTP**: Uses the current stateless MCP transport
 - 💬 **Message Formatting**: Supports Markdown and HTML formatting
 - 📝 **Formatting**: Supports Markdown and HTML message formatting
 
 ## Architecture
 
 This server implements the MCP specification using Cloudflare's Agents SDK:
-- **GET /sse**: SSE endpoint for MCP communication
-- **POST /mcp**: Streamable HTTP endpoint for MCP communication
+- **POST /mcp**: Stateless Streamable HTTP endpoint for MCP communication
+- **GET /sse**: Returns `410 Gone`; legacy SSE clients must migrate to `/mcp`
 - Built with TypeScript, MCP SDK, and Cloudflare Agents SDK
 - Proper JSON-RPC 2.0 error handling
-- Durable Objects for stateful connections (required by McpAgent)
 - Node.js compatibility mode enabled
 
 ## Setup
@@ -55,11 +53,13 @@ This server implements the MCP specification using Cloudflare's Agents SDK:
    ```
    Then edit `.dev.vars` with your bot token and chat ID. This file is used for both local development and deployment.
 
-2. For production deployment, set up Cloudflare secrets:
-   ```bash
-   npx wrangler secret put BOT_TOKEN
-   npx wrangler secret put DEFAULT_CHAT_ID  # Optional
-   ```
+2. For production deployment, generate an MCP bearer token and set up Cloudflare secrets:
+	```bash
+	openssl rand -hex 32
+	pnpm exec wrangler secret put BOT_TOKEN
+	pnpm exec wrangler secret put DEFAULT_CHAT_ID  # Optional
+	pnpm exec wrangler secret put MCP_AUTH_TOKEN
+	```
    
    **Note**: The DEFAULT_CHAT_ID is optional. If not set, you must provide a chat_id parameter when calling the `send_telegram_message` tool.
 
@@ -73,8 +73,8 @@ Deploy using Wrangler:
 
 ```bash
 # First set secrets
-npx wrangler secret put BOT_TOKEN
-npx wrangler secret put DEFAULT_CHAT_ID  # Optional
+pnpm exec wrangler secret put BOT_TOKEN
+pnpm exec wrangler secret put DEFAULT_CHAT_ID  # Optional
 
 # Then deploy
 pnpm run deploy
@@ -86,17 +86,21 @@ You can also set up continuous deployment directly from the cloudflare dashboard
 
 ### Claude Code Configuration
 
-Add the MCP server to Claude Code using the CLI via SSE transport:
+Add the MCP server to Claude Code using Streamable HTTP and the same bearer token:
 
 ```bash
-# For production deployment (SSE)
-claude mcp add telegram-notify https://your-worker-name.workers.dev/sse -t sse
+# For production deployment
+claude mcp add --scope user --transport http \
+  --header "Authorization: Bearer <MCP_AUTH_TOKEN>" \
+  telegram-notify https://your-worker-name.workers.dev/mcp
 
 # For local development
-claude mcp add telegram-notify http://localhost:8787/sse -t sse
+claude mcp add --transport http \
+  --header "Authorization: Bearer <MCP_AUTH_TOKEN>" \
+  telegram-notify http://localhost:8787/mcp
 ```
 
-**Note**: This server supports both SSE (Server-Sent Events) and Streamable HTTP transport. While SSE works well, Streamable HTTP provides better reliability and is the newer standard.
+The token is client access to the MCP endpoint, not the Telegram bot token. Never put the bot token in Claude's MCP configuration.
 
 You can verify the configuration with:
 ```bash
@@ -214,39 +218,38 @@ This command runs:
 
 Test the server:
 ```bash
-# Test SSE connection
-curl http://localhost:8787/sse
+# An unauthenticated request must return HTTP 401
+curl -i http://localhost:8787/mcp
 
-# Test health endpoint
-curl http://localhost:8787/
+# Claude Code performs the authenticated MCP handshake and health check
+claude mcp list
 ```
 
 ## Debugging
 
-### Testing the SSE Connection
+### Testing Authentication
 
-You can test the SSE endpoint directly:
+You can verify that the endpoint rejects requests without its bearer token:
 ```bash
-curl -N http://localhost:8787/sse
+curl -i http://localhost:8787/mcp
 ```
 
-This should return an event stream starting with an `endpoint` event.
+This should return `401 Unauthorized`. Then use `claude mcp list` to verify an authenticated client connection.
 
 ### Common Issues
 
-1. **Connection closes immediately**: Check that your worker is running and accessible at the specified URL.
+1. **401 Unauthorized**: Confirm the client's `Authorization: Bearer ...` header matches the `MCP_AUTH_TOKEN` Cloudflare secret.
 
-2. **No endpoint event received**: Ensure the SSE headers are being sent correctly and the stream is properly formatted.
+2. **MCP reconnects or times out**: Confirm the client uses HTTP transport and the `/mcp` endpoint, not the retired `/sse` endpoint.
 
-3. **Telegram notifications not sent**: Verify your `BOT_TOKEN` and `DEFAULT_CHAT_ID` are correctly set in the worker environment.
+3. **Telegram notifications not sent**: Verify your `BOT_TOKEN` and `DEFAULT_CHAT_ID` are correctly set in the Worker environment.
 
 ## Technical Details
 
 - **Language**: TypeScript (ES2021 target)
 - **Runtime**: Cloudflare Workers with Node.js compatibility
 - **Protocol**: MCP (Model Context Protocol)
-- **Transport**: SSE and Streamable HTTP
-- **State Management**: Durable Objects (required by McpAgent)
+- **Transport**: Stateless Streamable HTTP
 - **Observability**: Enabled for monitoring
 
 ## References

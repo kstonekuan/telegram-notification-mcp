@@ -5,13 +5,11 @@
  * manually define all environment bindings here. This ensures consistent
  * types across local development and CI builds.
  *
- * Secrets (BOT_TOKEN, DEFAULT_CHAT_ID) are configured in the Cloudflare
- * dashboard and read from .dev.vars locally.
+ * Secrets (BOT_TOKEN, DEFAULT_CHAT_ID, MCP_AUTH_TOKEN) are configured in the
+ * Cloudflare dashboard and read from .dev.vars locally.
  *
  * @see https://github.com/cloudflare/workers-sdk/issues/5756
  */
-
-import type { TelegramMCP } from "./index";
 
 // Augment the Cloudflare namespace with our env bindings
 declare global {
@@ -21,15 +19,16 @@ declare global {
 			BOT_TOKEN: string;
 			/** Default chat ID for sending notifications (optional) */
 			DEFAULT_CHAT_ID?: string;
-			/** Durable Object binding for the MCP server */
-			MCP_OBJECT: DurableObjectNamespace<TelegramMCP>;
+			/** Shared bearer token required by clients connecting to the MCP endpoint */
+			MCP_AUTH_TOKEN: string;
 		}
 		interface GlobalProps {
 			mainModule: typeof import("./index");
-			durableNamespaces: "TelegramMCP";
 		}
 	}
 
 	// Top-level Env interface that extends Cloudflare.Env
 	interface Env extends Cloudflare.Env {}
 }
+
+export {};
